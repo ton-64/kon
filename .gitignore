@@ -1,0 +1,11 @@
+# Ninja
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Compile commands
+*compile_commands.json
+.cache/
+
+# Build outputs
+bin/
