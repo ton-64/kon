@@ -1,40 +1,42 @@
 #include "log.h"
 
+#include <sokol/log.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 
 static void
-defaultConsoleHook(kon_log_level_t log_level, const char* message) {
-  char buf[256];
-
-  const char* _; /* Im tired of naming things */
-  switch (log_level) {
-    case KON_DEBUG_LEVEL: _ = "debug"; break;
-    case KON_INFO_LEVEL:  _ = "info";  break;
-    case KON_WARN_LEVEL:  _ = "warn";  break;
-    case KON_ERROR_LEVEL: _ = "error"; break;  
-    default:
-      return;
-  }
-  
-  int n = snprintf(buf, sizeof buf, "kon %s : %s", _, message);
-  fputs(buf, stderr);
-  fputc('\n', stderr);  
+defaultRecv(
+  const char* file_name,
+  int line_nr,
+  kon_log_tag_t tag,
+  kon_log_level_t level,
+  const char* message
+) {  
+  slog_func(NULL, (uint32_t)level, 0, message, line_nr, file_name, NULL);
 }
 
-kon_consoleHook kon_console_hook = defaultConsoleHook;
+kon_logRecv recv = defaultRecv;
 
 void
-__kon_log(kon_log_level_t log_level, const char *format, ...) {
-  if (!kon_console_hook || !kon_logEnabled(log_level))
+__kon_log(
+  const char* file_name,
+  int line_nr,
+  kon_log_tag_t tag,
+  kon_log_level_t level,
+  const char* format,
+  ...
+) {
+  if (!recv || !kon_logEnabled(level))
     return;
-  
-  char buf[128]; /* 64 is enough */
 
+  char buf[128];
   va_list args;
   va_start(args, format);
-  vsnprintf(buf, sizeof buf, format, args);
+  int n = vsnprintf(buf, sizeof buf, format, args);
   va_end(args);
-  
-  kon_console_hook(log_level, buf);
+
+  if (n > 0) {
+    recv(file_name, line_nr, tag, level, buf);
+  }
 }
