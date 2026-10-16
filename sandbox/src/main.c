@@ -1,53 +1,60 @@
-#include <kon/log.h>
-#include <kon/fs.h>
-
 #define KON_ENTRY
-#include <kon/app.h>
+#include <kon.h>
+#include <nuklear/nuklear.h>
 
-#include <kon/ev.h>
+static kon_track_t goob;
 
-#include <stdlib.h>
-#include <string.h>
+void on_init() {
+  kon_toExecDir();
 
-kon_log_level_t kon_min_log_level = KON_LOG_LEVEL_INFO;
+  size_t size;
+  char* data = kon_loadFile("a.mp3", &size);
+  if (data == NULL) {
+    return;
+  }
 
-static void
-onInit() {
-  char* data = kon_loadFile("a.txt", NULL);
-  kon_infoLog(0, "%s", data);
+  goob = kon_loadTrackFromMemory(data, size);
+  if (goob.load == false) {
+    kon_errorLog(0, "Ha");
+    kon_requestQuit();
+    return;
+  }
+
   free(data);
 }
 
-static void
-onShutdown() {
-  kon_saveFile("a.txt", "Hello World", 11);
+void on_deinit() {
+  kon_freeTrack(&goob);
 }
 
-static void
-onUpdate(float dt) {
+void on_update(float dt) {
+  kon_camera_t cam = kon_cameraInit(500, 500);
+  kon_render(&cam);  
+}
+
+void on_ui(struct nk_context* nk) {
+  if (nk_begin(nk, "Basic", nk_rect(50, 50, 100, 200), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE)) {
+    nk_layout_row_dynamic(nk, 30, 1);
+
+    if (nk_button_label(nk, "Test") == nk_true) {
+      kon_playTrack(&goob);
+    }
+  }
+  nk_end(nk);
+}
+
+void on_render() {
   
 }
 
-static void
-onEvent(kon_event_t* ev) {
-  switch (ev->kind) {
-    case KON_EVENTKIND_KEY_DOWN:
-      if (ev->keycode == KON_KEYCODE_Q)
-        kon_requestQuit();    
-    default:
-      break;
-  } 
-}
-
-kon_app_desc_t*
-kon_passAppDesc(int argc, char* argv[]) {
-  static kon_app_desc_t desc = (kon_app_desc_t){
-    .onInit = onInit,
-    .onShutdown = onShutdown,
-    .onUpdate = onUpdate,
-    .onEvent = onEvent,
-
-    .title = "Kon sandbox"
+kon_desc_t* kon_main(int argc, char* argv[]) {
+  static kon_desc_t desc = (kon_desc_t){
+    .on_init = on_init,
+    .on_deinit = on_deinit,
+    .on_update = on_update,
+    .on_ui = on_ui,
+    .on_render = on_render,
+    .title = "Hello"
   };
   return &desc;
 }

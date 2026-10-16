@@ -39,6 +39,7 @@ project "kon"
   filter { "options:sokol-experimental" }
     defines { "KON_SOKOL_EXPERIMENTAL" }
 
+-- Unix systems wont link the needed dependencies of a library 
 function kon_linkSys()
   filter { "system:windows or system:linux or system:bsd ", "options:sokol-experimental" }
     links { "vulkan" }
@@ -60,6 +61,7 @@ function kon_linkSys()
           
   filter {}
 end
+
   kon_linkSys()
 
 filter { "options:include-sandbox" }
@@ -74,7 +76,8 @@ filter { "options:include-sandbox" }
     }
 
     includedirs {
-      "src"
+      "src",
+      "deps"
     }
 
     links {

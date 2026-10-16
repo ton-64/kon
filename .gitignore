@@ -1,11 +1,12 @@
-# Ninja
-*.ninja
-.ninja_deps
-.ninja_log
-
-# Compile commands
-*compile_commands.json
+# Buiid output
+bin/
 .cache/
 
-# Build outputs
-bin/
+# Ninja
+.ninja_deps/
+.ninja_log/
+build.ninja/
+*.ninja
+
+# LSP
+compile_commands.json

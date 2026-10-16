@@ -3,7 +3,13 @@
 
 #include "start.h"
 
+#include <stdint.h>
+
 typedef enum kon_log_tag {
+  KON_LOG_TAG_STB,
+  KON_LOG_TAG_MINIAUDIO,
+  KON_LOG_TAG_SOKOL,
+    
   KON_LOG_TAG_DEFAULT,
 
   KON_LOG_TAG_RESERVE_1,
@@ -29,7 +35,7 @@ typedef enum kon_log_level {
 extern kon_log_level_t kon_min_log_level;
 
 /* @brief Checks the log level if its greater than the minimal log level */
-#define kon_logEnabled(level) (level >= kon_min_log_level) 
+#define kon_logEnabled(level) (level <= kon_min_log_level) 
 
 /* @brief Recieve a log message for you to output */
 typedef void (*kon_logRecv)(
@@ -39,7 +45,7 @@ typedef void (*kon_logRecv)(
   kon_log_level_t level,
   const char* message
 );
-extern kon_logRecv kon_log_recv;
+void kon_setLogRecv(kon_logRecv recv);
 
 #define kon_errorLog(tag, format, ...) __kon_log(__FILE__, __LINE__, (tag), KON_LOG_LEVEL_ERROR, format, ##__VA_ARGS__)
 #define kon_warnLog(tag, format, ...)  __kon_log(__FILE__, __LINE__, (tag), KON_LOG_LEVEL_WARN, format, ##__VA_ARGS__)
@@ -59,5 +65,21 @@ void __kon_log(
   const char* format,
   ...
 );
+
+static inline void
+__kon_sokol_log(
+  const char* h_tag,
+  uint32_t log_level,
+  uint32_t log_item,
+  const char* message,
+  uint32_t line_nr,
+  const char* file_name,
+  void* user_data
+) {
+  KON_UNUSED(h_tag);
+  KON_UNUSED(user_data);
+  
+  __kon_log(file_name, line_nr, KON_LOG_TAG_SOKOL, (kon_log_level_t)log_level, message);
+}
 
 #endif /* KON_LOG_H_ */

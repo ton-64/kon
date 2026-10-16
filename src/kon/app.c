@@ -1,59 +1,69 @@
 #include "app.h"
+#include "log.h"
 #include "ev.h"
+#include "load/audio.h"
+#include "render/render.h"
 
 /*
     SOKOL is the main backend for now, propably forever.
  */
 #include <sokol/app.h>
-#include <sokol/gfx.h>
-#include <sokol/glue.h>
-#include <sokol/log.h>
 
-static kon_app_desc_t* desc = NULL;
+static kon_desc_t* desc = NULL;
 
 static void
-internalInitCb(void) {
-  sg_setup(&(sg_desc){
-      .environment = sglue_environment(),
-      .logger.func = slog_func 
-  });
+onInit(void) {
+  if (!__kon_audioInit())
+    return;
+  __kon_renderInit(desc);
 
-  desc->onInit();
+  if (desc->on_init)
+    desc->on_init();
 }
 
 static void
-internalFrameCb(void) {
+onFrame(void) {
+  float dt = (float)sapp_frame_duration();
+
+  if (desc->on_update)
+    desc->on_update(dt);
+}
+
+static void
+onCleanup(void) {
+  if (desc->on_deinit)
+    desc->on_deinit();
   
+  __kon_renderDeinit();
+  __kon_audioDeinit();  
 }
 
 static void
-internalCleanupCb(void) {
-  desc->onShutdown();
-  
-  sg_shutdown();
-}
-
-static void
-internalEventCb(const sapp_event* ev) {
-    
+onEvent(const sapp_event* ev) {
   /*
-      As you can see, our event struct is directly compatible with SOKOL's event struct.
+      Since kon_event_t maps directly, I can just cast it.
    */
-  desc->onEvent((kon_event_t*)ev);
+  const kon_event_t* m = (kon_event_t*)ev;
+
+  __kon_renderEvent(m);
+
+  if (desc->on_event)
+    desc->on_event(m);
 }
 
 void
-__kon_app_run(int argc, char* argv[]) {
-  desc = kon_passAppDesc(argc, argv);
+__kon_run(int argc, char* argv[]) {
+  desc = kon_main(argc, argv);
   
   sapp_desc d = (sapp_desc){
-    .init_cb = internalInitCb,
-    .frame_cb = internalFrameCb,
-    .cleanup_cb = internalCleanupCb,
-    .event_cb = internalEventCb,
+    .init_cb = onInit,
+    .frame_cb = onFrame,
+    .cleanup_cb = onCleanup,
+    .event_cb = onEvent,
     .width = 640,
     .height = 480,
-    .window_title = desc->title,    
+    .window_title = desc->title,
+    .logger.func = __kon_sokol_log    
   };
   sapp_run(&d);
 }

@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+kon_log_level_t kon_min_log_level = KON_LOG_LEVEL_INFO;
+
 static void
 defaultRecv(
   const char* file_name,
@@ -12,11 +14,16 @@ defaultRecv(
   kon_log_tag_t tag,
   kon_log_level_t level,
   const char* message
-) {  
+) {
   slog_func(NULL, (uint32_t)level, 0, message, line_nr, file_name, NULL);
 }
 
-kon_logRecv recv = defaultRecv;
+static kon_logRecv recv = defaultRecv;
+
+void
+kon_setLogRecv(kon_logRecv user_recv) {
+  recv = user_recv;
+}
 
 void
 __kon_log(

@@ -9,12 +9,58 @@
 #if defined(KON_WINDOWS)
 #include <direct.h>
 #include <io.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#elif defined(KON_APPLE)
+#include <mach-o/dyld.h>
+#include <unistd.h>
 #else
 #include <unistd.h>
 #endif
 
 bool
-kon_makeDirectory(const char* path) {
+kon_toExecDir() {
+  char buf[1024];
+
+#if defined(KON_WINDOWS)
+  GetModuleFileName(NULL, buf, (DWORD)sizeof(buf));
+#elif defined (KON_APPLE)
+  uint32_t size = sizeof buf;
+  if (_NSGetExecutablePath(buf, &size) != 0) {
+    kon_errorLog(KON_LOG_TAG_DEFAULT, "");
+    return false;
+  }
+#else
+  ssize_t len = readlink("/proc/self/exe", buf, sizeof buf - 1);
+  if (len < 0) {
+    kon_errorLog(KON_LOG_TAG_DEFAULT, "", strerror(errno));
+    return false;
+  }
+#endif 
+
+  char* ls = strrchr(buf, '/');
+#if defined(KON_WINDOWS)
+  char* lb = strrchr(buf, '\\');
+  if (lb && (!ls || lb > ls)) {
+    ls = lb;
+  }
+#endif
+  if (ls) {
+    *ls = '\0';
+  }
+
+#if defined(KON_WINDOWS)
+  _chdir(buf);
+#else
+  chdir(buf);
+#endif
+  kon_infoLog(KON_LOG_TAG_DEFAULT, "Successfully changed directory to '%s' (executable)", buf);
+  
+}
+
+bool
+kon_makeDir(const char* path) {
   int res;
 #if defined(KON_WINDOWS)
   res = _mkdir(path, 0755);
@@ -33,7 +79,7 @@ kon_makeDirectory(const char* path) {
   return true;
 }
 
-char*
+void*
 kon_loadFile(const char* path, size_t* out_size) {
   int fd;
 #if defined(KON_WINDOWS)
@@ -60,7 +106,7 @@ kon_loadFile(const char* path, size_t* out_size) {
   size_t file_size = (size_t)st.st_size;
   
   size_t read_size = 0;
-  char* read_data = malloc(file_size);
+  void* read_data = malloc(file_size);
   if (!read_data) {
     kon_errorLog(KON_LOG_TAG_DEFAULT, "Failed to load '%s' because read data could not be allocated : %s", path, strerror(errno));
     return NULL;
@@ -77,8 +123,8 @@ kon_loadFile(const char* path, size_t* out_size) {
     if (n > 0) {
       read_size += n;
     } else if(errno == EINTR) {
-      kon_errorLog(KON_LOG_TAG_DEFAULT, "_read() | read() was interrupted. ");
-      break;
+      kon_infoLog(KON_LOG_TAG_DEFAULT, "_read() | read() was interrupted. ");
+      continue;
     } else {
       break;
     }
@@ -108,7 +154,7 @@ kon_loadFile(const char* path, size_t* out_size) {
 }
 
 bool
-kon_saveFile(const char* path, const char* data, size_t size) {
+kon_saveFile(const char* path, const void* data, size_t size) {
   int fd;
 #if defined(KON_WINDOWS)
   fd = _open(path, _O_CREAT | _O_TRUNC | _O_WRONLY | _O_BINARY, _S_IWRITE);/* Holy fucking shit Win32 */

@@ -6,20 +6,22 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-/*
-  @brief Make a directory if it doesnt exist yet.
- */
-bool kon_makeDirectory(const char* path);
+bool kon_toExecDir();
 
 /*
-  @brief Load a file
-  @return NULL on failure.
+    @brief Make a directory if it doesnt exist yet.
  */
-char* kon_loadFile(const char* path, size_t* out_size);
+bool kon_makeDir(const char* path);
 
 /*
-  @brief Save a file; it the file doesnt exist, then make one
+    @brief Load a file
+    @return NULL on failure.
  */
-bool kon_saveFile(const char* path, const char* data, size_t size);
+void* kon_loadFile(const char* path, size_t* out_size);
+
+/*
+    @brief Save a file; it the file doesnt exist, then make one
+ */
+bool kon_saveFile(const char* path, const void* data, size_t size);
 
 #endif /* KON_FS_H_ */

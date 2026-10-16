@@ -1,38 +1,34 @@
 /*
-  This file is used to load single header dependencies of Kon
+    This file is used to load single header dependencies of Kon
  */
 #include "start.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/image.h>
 
-#if defined(KON_WINDOWS)
-#ifdef KON_SOKOL_EXPERIMENTAL
-#define SOKOL_VULKAN
-#else
-#define SOKOL_D3D11
-#endif
+#define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio/miniaudio.h>
 
-#elif defined(KON_ANDROID)
-#define SOKOL_GLES3 
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#include <nuklear/nuklear.h>
 
-#elif defined(KON_LINUX)
-#ifdef KON_SOKOL_EXPERIMENTAL
-#define SOKOL_VULKAN
-#else
+#if defined(KON_GLCORE)
 #define SOKOL_GLCORE
-#endif
-
-#elif defined(KON_EMSCRIPTEN)
-#ifdef KON_SOKOL_EXPERIMENTAL
-#define SOKOL_WGPU
-#else
+#elif defined(KON_GLES3)
 #define SOKOL_GLES3
-#endif
-
-#elif defined(KON_IOS) || defined(KON_MACOS)
+#elif defined(KON_D3D11)
+#define SOKOL_D3D11
+#elif defined(KON_METAL)
 #define SOKOL_METAL
-
+#elif defined(KON_VULKAN)
+#define SOKOL_VULKAN
+#elif defined(KON_WGPU)
+#define SOKOL_WGPU
 #endif
 
 #define SOKOL_IMPL
@@ -43,3 +39,5 @@
 
 #include <sokol/gfx.h>
 #include <sokol/glue.h>
+
+#include <sokol/util/nuklear.h>
